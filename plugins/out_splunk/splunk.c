@@ -59,6 +59,7 @@ static int pack_map_meta(struct flb_splunk *ctx,
 {
     int c = 0;
     int index_key_set = FLB_FALSE;
+    int source_key_set = FLB_FALSE;
     int sourcetype_key_set = FLB_FALSE;
     flb_sds_t str;
     struct mk_list *head;
@@ -85,11 +86,12 @@ static int pack_map_meta(struct flb_splunk *ctx,
         }
     }
 
-    /* event source */
-    if (ctx->event_source) {
-        str = flb_ra_translate(ctx->ra_event_source, tag, tag_len,
+    /* event source (key lookup) */
+    if (ctx->event_source_key) {
+        str = flb_ra_translate(ctx->ra_event_source_key, tag, tag_len,
                                map, NULL);
         if (str) {
+            /* source_key was found */
             if (flb_sds_len(str) > 0) {
                 flb_mp_map_header_append(mh);
                 msgpack_pack_str(mp_pck, sizeof(FLB_SPLUNK_DEFAULT_EVENT_SOURCE) -1);
@@ -98,10 +100,24 @@ static int pack_map_meta(struct flb_splunk *ctx,
                                       sizeof(FLB_SPLUNK_DEFAULT_EVENT_SOURCE) - 1);
                 msgpack_pack_str(mp_pck, flb_sds_len(str));
                 msgpack_pack_str_body(mp_pck, str, flb_sds_len(str));
+                source_key_set = FLB_TRUE;
                 c++;
             }
             flb_sds_destroy(str);
         }
+        /* If not found, it will fallback to the value set in event_source */
+    }
+
+    if (source_key_set == FLB_FALSE && ctx->event_source) {
+        flb_mp_map_header_append(mh);
+        msgpack_pack_str(mp_pck, sizeof(FLB_SPLUNK_DEFAULT_EVENT_SOURCE) -1);
+        msgpack_pack_str_body(mp_pck,
+                              FLB_SPLUNK_DEFAULT_EVENT_SOURCE,
+                              sizeof(FLB_SPLUNK_DEFAULT_EVENT_SOURCE) - 1);
+        msgpack_pack_str(mp_pck, flb_sds_len(ctx->event_source));
+        msgpack_pack_str_body(mp_pck,
+                              ctx->event_source, flb_sds_len(ctx->event_source));
+        c++;
     }
 
     /* event sourcetype (key lookup) */

@@ -61,12 +61,23 @@ struct flb_splunk {
     flb_sds_t event_host;
     struct flb_record_accessor *ra_event_host;
 
-    /* Event source */
-    flb_sds_t event_source;
-    struct flb_record_accessor *ra_event_source;
-
     /*
      * NOTE: EVENT SOURCE
+     * -------------------
+     * we use two separate variables since we aim to specify a default in case
+     * a record accessor pattern is given but not found. The event_source_key
+     * has precedence over th the 'event_source' variable.
+     */
+
+    /* Event source */
+    flb_sds_t event_source;
+
+    /* Event source record key */
+    flb_sds_t event_source_key;
+    struct flb_record_accessor *ra_event_source_key;
+
+    /*
+     * NOTE: EVENT SOURCETYPE
      * -------------------
      * we use two separate variables since we aim to specify a default in case
      * a record accessor pattern is given but not found. The event_sourcetype_key
